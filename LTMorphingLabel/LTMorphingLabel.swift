@@ -85,6 +85,8 @@ typealias LTMorphingSkipFramesClosure =
     @IBOutlet open weak var delegate: LTMorphingLabelDelegate?
     open var morphingEffect: LTMorphingEffect = .scale
     
+    open var alwaysReplace: Bool = false
+    
     var startClosures = [String: LTMorphingStartClosure]()
     var effectClosures = [String: LTMorphingEffectClosure]()
     var drawingClosures = [String: LTMorphingDrawingClosure]()
@@ -132,6 +134,15 @@ typealias LTMorphingSkipFramesClosure =
 
             previousText = text ?? ""
             diffResults = previousText.diffWith(newValue)
+            
+            if let diffResults = diffResults, alwaysReplace {
+                let array = zip(diffResults.0, diffResults.1).map({ _ in (LTCharacterDiffResult.replace, false) })
+                self.diffResults = array.reduce(into: ([LTCharacterDiffResult](), [Bool]()), {
+                    $0.0.append($1.0)
+                    $0.1.append($1.1)
+                    })
+            }
+
             super.text = newValue ?? ""
             
             morphingProgress = 0.0
@@ -535,8 +546,9 @@ extension LTMorphingLabel {
                     .foregroundColor: textColor.withAlphaComponent(charLimbo.alpha)
                 ]
 
-                attrs[.font] = UIFont(descriptor: font.fontDescriptor, size: charLimbo.size)
-                
+                let font = self.font.withSize(charLimbo.size)
+                attrs[.font] = font
+
                 for (key, value) in textAttributes ?? [:] {
                     attrs[key] = value
                 }
